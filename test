@@ -1,0 +1,74 @@
+#define Sensor1 port
+#define Sensor2 port
+#define Sensor3 port
+#define Sensor4 port
+
+#define  Motor_R1 port
+#define  Motor_R2 port
+#define  Motor_L1 port
+#define  Motor_L2 port
+
+void setup() {
+  pinMode(Sensor1, INPUT);
+  pinMode(Sensor2, INPUT);
+  pinMode(Sensor3, INPUT);
+  pinMode(Sensor4, INPUT);
+
+  pinMode(Motor_R1, OUTPUT);
+  pinMode(Motor_R2, OUTPUT);
+  pinMode(Motor_L1, OUTPUT);
+  pinMode(Motor_L2, OUTPUT);
+}
+
+void loop() {
+  int sensor1Value = digitalRead(SENSOR1);
+  int sensor2Value = digitalRead(SENSOR2);
+  int sensor3Value = digitalRead(SENSOR3);
+  int sensor4Value = digitalRead(SENSOR4);
+
+  if (sensor1Value == HIGH && sensor2Value == HIGH && sensor3Value == LOW && sensor4Value == HIGH) {
+    moveForward();
+  } else if (sensor1Value == HIGH && sensor2Value == LOW && sensor3Value == LOW && sensor4Value == HIGH) {
+    turnLeft();
+  } else if (sensor1Value == HIGH && sensor2Value == HIGH && sensor3Value == HIGH && sensor4Value == HIGH) {
+    stopRobot();
+  } else if (sensor1Value == LOW && sensor2Value == HIGH && sensor3Value == HIGH && sensor4Value == HIGH) {
+    turnRight();
+  } else {
+    moveBackward();
+  }
+}
+void moveForward() {
+  digitalWrite(MOTOR_LEFT_1, HIGH);
+  digitalWrite(MOTOR_LEFT_2, LOW);
+  digitalWrite(MOTOR_RIGHT_1, HIGH);
+  digitalWrite(MOTOR_RIGHT_2, LOW);
+}
+
+void turnLeft() {
+  digitalWrite(MOTOR_LEFT_1, LOW);
+  digitalWrite(MOTOR_LEFT_2, LOW);
+  digitalWrite(MOTOR_RIGHT_1, HIGH);
+  digitalWrite(MOTOR_RIGHT_2, LOW);
+}
+
+void stopRobot() {
+  digitalWrite(MOTOR_LEFT_1, LOW);
+  digitalWrite(MOTOR_LEFT_2, LOW);
+  digitalWrite(MOTOR_RIGHT_1, LOW);
+  digitalWrite(MOTOR_RIGHT_2, LOW);
+}
+
+void turnRight() {
+  digitalWrite(MOTOR_LEFT_1, HIGH);
+  digitalWrite(MOTOR_LEFT_2, LOW);
+  digitalWrite(MOTOR_RIGHT_1, LOW);
+  digitalWrite(MOTOR_RIGHT_2, LOW);
+}
+
+void moveBackward() {
+  digitalWrite(MOTOR_LEFT_1, LOW);
+  digitalWrite(MOTOR_LEFT_2, HIGH);
+  digitalWrite(MOTOR_RIGHT_1, LOW);
+  digitalWrite(MOTOR_RIGHT_2, HIGH);
+}
