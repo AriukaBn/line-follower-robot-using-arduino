@@ -1,0 +1,93 @@
+#include <PID_v1.h>
+
+// Define sensor and motor pins
+#define NUM_SENSORS 6
+
+// Sensor pins
+const int sensorPins[NUM_SENSORS] = {A1, A2, A3, A6};
+int sensorValues[NUM_SENSORS];
+
+// Motor pins
+const int motorLeftPWM = 7;
+const int motorRightPWM = 6;
+const int motorLeftDir1 = 8;
+const int motorLeftDir2 = 9;
+const int motorRightDir1 = 3;
+const int motorRightDir2 = 5;
+const int stbyPin = 10;
+
+// PID parameters
+double Kp = 0.2, Ki = 0.0, Kd = 0.1;
+double setpoint = 2500; // Center value for 6 sensors
+double input, output;
+PID myPID(&input, &output, &setpoint, Kp, Ki, Kd, DIRECT);
+
+void setup() {
+  // Initialize motors
+  pinMode(motorLeftPWM, OUTPUT);
+  pinMode(motorRightPWM, OUTPUT);
+  pinMode(motorLeftDir1, OUTPUT);
+  pinMode(motorLeftDir2, OUTPUT);
+  pinMode(motorRightDir1, OUTPUT);
+  pinMode(motorRightDir2, OUTPUT);
+  pinMode(stbyPin, OUTPUT);
+  digitalWrite(stbyPin, HIGH); // Enable motor driver
+
+  // Initialize PID
+  myPID.SetMode(AUTOMATIC);
+  myPID.SetOutputLimits(-255, 255);
+}
+
+void loop() {
+  // Read sensor values
+  int position = readSensors();
+
+  // Calculate error
+  input = position;
+
+  // Compute PID output
+  myPID.Compute();
+
+  // Set motor speeds
+  int motorSpeed = 200; // Base speed
+  int leftSpeed = motorSpeed + output;
+  int rightSpeed = motorSpeed - output;
+
+  // Ensure motor speeds are within bounds
+  leftSpeed = constrain(leftSpeed, -255, 255);
+  rightSpeed = constrain(rightSpeed, -255, 255);
+
+  // Set motor directions
+  if (leftSpeed > 0) {
+    digitalWrite(motorLeftDir1, HIGH);
+    digitalWrite(motorLeftDir2, LOW);
+  } else {
+    digitalWrite(motorLeftDir1, LOW);
+    digitalWrite(motorLeftDir2, HIGH);
+    leftSpeed = -leftSpeed;
+  }
+
+  if (rightSpeed > 0) {
+    digitalWrite(motorRightDir1, HIGH);
+    digitalWrite(motorRightDir2, LOW);
+  } else {
+    digitalWrite(motorRightDir1, LOW);
+    digitalWrite(motorRightDir2, HIGH);
+    rightSpeed = -rightSpeed;
+  }
+
+  // Set motor speeds
+  analogWrite(motorLeftPWM, leftSpeed);
+  analogWrite(motorRightPWM, rightSpeed);
+}
+
+int readSensors() {
+  int position = 0;
+  int total = 0;
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    sensorValues[i] = analogRead(sensorPins[i]);
+    position += sensorValues[i] * (i * 1000); // Weighted sum
+    total += sensorValues[i];
+  }
+  return total > 0 ? position / total : 2500; // Return average position
+}
