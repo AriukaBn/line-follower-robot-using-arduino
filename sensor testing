@@ -1,0 +1,20 @@
+#define NUM_SENSORS 6
+const int sensorPins[NUM_SENSORS] = {A0, A1, A2, A3, A6, A7};
+
+void setup() {
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    pinMode(sensorPins[i], INPUT);
+  }
+  Serial.begin(9600);
+  Serial.println("Setup complete");
+}
+
+void loop() {
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    int sensorValue = analogRead(sensorPins[i]);
+    Serial.print(sensorValue);
+    Serial.print(" ");
+  }
+  Serial.println(); // Add a newline after printing all sensor values
+  delay(1000); // Wait for 1 second before reading again
+}
