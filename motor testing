@@ -1,0 +1,44 @@
+// Define motor pins
+#define AIN1 2
+#define AIN2 4
+#define PWMA 5
+#define BIN1 7
+#define BIN2 8
+#define PWMB 6
+#define STBY 9
+
+void setup() {
+  pinMode(AIN1, OUTPUT);
+  pinMode(AIN2, OUTPUT);
+  pinMode(PWMA, OUTPUT);
+  pinMode(BIN1, OUTPUT);
+  pinMode(BIN2, OUTPUT);
+  pinMode(PWMB, OUTPUT);
+  pinMode(STBY, OUTPUT);
+
+  digitalWrite(STBY, HIGH); // Disable standby
+}
+
+ void loop() {
+  // Set motors to move forward
+  digitalWrite(AIN1, LOW); // Reverse the signals for the left motor
+  digitalWrite(AIN2, HIGH);
+  analogWrite(PWMA, 255); // Full speed
+
+  digitalWrite(BIN1, HIGH);
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMB, 255); // Full speed
+
+  delay(1000); // Move forward for 1 second
+
+  // Stop motors
+  digitalWrite(AIN1, LOW);
+  digitalWrite(AIN2, LOW);
+  analogWrite(PWMA, 0);
+
+  digitalWrite(BIN1, LOW);
+  digitalWrite(BIN2, LOW);
+  analogWrite(PWMB, 0);
+
+  delay(1000); // Stop for 1 second
+}
