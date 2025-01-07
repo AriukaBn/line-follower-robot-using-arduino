@@ -1,0 +1,83 @@
+void shugam_dagah ( ){
+int s1 = analogRead (A0); // 1-р мэдрэгч
+int s2 = analogRead (A1); // 2-р мэдрэгч
+int s3 = analogRead (A2); // 3-р мэдрэгч
+int s4 = analogRead (A3); // 4-р мэдрэгч
+int s5 = analogRead (A6); // 5-р мэдрэгч
+int s6 = analogRead (A7); // 6-р мэдрэгч
+// 1-6 дугаар мэдрэгчийн утгыг хэвлэж харуулах
+Serial. print (s1);
+Serial. print(" ");
+Serial. print (s2);
+Serial print(" ");
+Serial. print (s3);
+Serial. print(" ");
+Serial.print(s4);
+Serial. print("
+") ;
+Serial. print(s5);
+Serial print("
+");
+
+serial. printin(s6);
+delay (50);
+motor_hurd=100;
+if (s1>500 && S2>500 && 53<50 && 54<50 && S5>500 && 56>500){
+/ / голын 2 мэдрэгч цагаан шугам мэдрэх уед
+analogWrite(mot1_pwm, motor_hurd);
+analogwrite(mot2_pwm, motor_hurd);}
+else if (s1>500 && s2>500 && s3>180 && s4<50 && 55>500 && s6>500)
+{
+analogWrite(mot1_pwm, (motor_hurd-10));
+analogWrite(mot2_pwm, (motor_hurd+10));
+}
+else if (s1>500 && s2>500 && S3>500 && S4<50 && S5>500 && 56>500){
+analogwrite moti_pwm, (motor_hurd-20));
+analogwrite motz_pwm, (motor_hurd+20));
+}
+else if (s1>500 && s2>500 && s3>500 && s4<600 && s5<680 && s6>500){
+analogWrite(mot1_pwm, (motor_hurd-30));
+analogWrite(mot2_pwm, (motor_hurd+30));}
+else if (s1>500 && s2>500 && s3>500 && s4>500 && s5<680 && s6<380)
+{
+analogWrite(mot1_pwm, (motor_hurd-40));
+analogWrite(mot2_pwm, (motor_hurd+40));
+}
+else if (s1>500 && s2>500 && s3>500 && s4<50 && s5>170 && s6<50){
+analogwrite(mot1_pwm, (motor_hurd-50));
+analogWrite(mot2_pwm, (motor_hurd+50));}
+if (s1>500 8& s2>500 && s3>500 && s4>500 && s5>500 && s6<50){
+analogWrite(mot1_pwm, (motor_hurd-70));
+analogWrite(mot2_pwm, (motor_hurd+70));}
+else if (s1>500 && s2>500 && s3<50 && s4<50 && s5<200 && s6<50){
+analogWrite(mot1_pwm, (motor_hurd-60));
+analogWrite(mot2_pwm, (motor_hurd+60));}
+
+else if (s1<50 && s2<50 && s3<50 && s4<379 && s5>500 && s6>500)
+{
+analogWrite(mot1_pwm, (motor_hurd+70));
+analogWrite(mot2_pwm, (motor_hurd-70));}
+else if (s1<50 && s2<50 && s3<50 && s4<50 && s5>500 && s6>500){
+analogWrite(mot1_pwm, (motor_hurd+60));
+analogWrite(mot2_pwm, (motor_hurd-60));}
+else if (s1<50 && s2>150 && s3>500 && s4>500 && s5>500 && s6>500){
+analogWrite(mot1_pwm, (motor_hurd+60));
+analogWrite(mot2_pwm, (motor_hurd-60));}
+else if (s1<50 && s2>500 && s3>500 && s4>500 && s5>500 && s6>500)
+{
+analogWrite(mot1_pwm, (motor_hurd+70));
+analogWrite(mot2_pwm, (motor_hurd-70));
+}
+else if (s1<60 && s2<50 && s3>500 && s4>500 && s5>500 && s6>500){
+analogWrite(mot1_pwm, (motor_hurd+40));
+analogWrite(mot2_pwm, (motor_hurd-40));}
+else if (s1>500 && s2<50 && s3>270 && s4>500 && s5>500 && s6>500){
+analogWrite(mot1_pwm, (motor_hurd+30));
+analogWrite(mot2_pwm, (motor_hurd-30));}
+else if (s1>500 && s2<50 8& s3<50 && s4>500 && s5>500 8& s6>500){
+analogWrite(moti_pwm, (motor_hurd+20));
+analogwrite(mot2_pwm, (motor_hurd-20));}
+else if (s1>500 && s2>420 && s3<50 && s4>245 && s5>500 && s6>500)
+{
+analogWrite(mot1_pwm, (motor_hurd+10));
+analogWrite(mot2_pwm, (motor _hurd-10));}}
