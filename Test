@@ -1,56 +1,85 @@
-#include <QTRSensors.h>
-
-// Motor pins
-const int mot1_pwm = 6;
-const int mot2_pwm = 5;
-const int mot1_b = 7;
-const int mot1_a = 8;
-const int mot2_a = 2;
-const int mot2_b = 4;
-const int stby = 9;
+#define NUM_SENSORS 6
 
 // Sensor pins
-const int sensorCount = 6;
-QTRSensorsRC qtrrc((unsigned char[]) {A0, A1, A2, A3, A6, A7}, sensorCount, 2500, 13);
+const int sensorPins[NUM_SENSORS] = {A0, A1, A2, A3, A6, A7};
+int sensorValues[NUM_SENSORS];
 
-int motor_hurd = 50; // Base motor speed
-int lastError = 0;
-float KP = 0.2; // Proportional gain
-float KD = 0.1; // Derivative gain
+// Motor pins
+const int motorLeftPWM = 5;
+const int motorRightPWM = 6;
+const int motorLeftDir1 = 2;
+const int motorLeftDir2 = 4;
+const int motorRightDir1 = 7;
+const int motorRightDir2 = 8;
+const int stbyPin = 9;
+
+// Proportional control parameter
+double Kp = 0.2;
+double setpoint = 2500; // Center value for 6 sensors
 
 void setup() {
   // Initialize motors
-  pinMode(mot1_pwm, OUTPUT);
-  pinMode(mot2_pwm, OUTPUT);
-  pinMode(mot1_a, OUTPUT);
-  pinMode(mot1_b, OUTPUT);
-  pinMode(mot2_a, OUTPUT);
-  pinMode(mot2_b, OUTPUT);
-  pinMode(stby, OUTPUT);
-  digitalWrite(stby, HIGH); // Enable motor driver
-  analogWrite(mot1_pwm, 0);
-  analogWrite(mot2_pwm, 0);
-  Serial.begin(9600);
-  qtrrc.calibrate();
+  pinMode(motorLeftPWM, OUTPUT);
+  pinMode(motorRightPWM, OUTPUT);
+  pinMode(motorLeftDir1, OUTPUT);
+  pinMode(motorLeftDir2, OUTPUT);
+  pinMode(motorRightDir1, OUTPUT);
+  pinMode(motorRightDir2, OUTPUT);
+  pinMode(stbyPin, OUTPUT);
+  digitalWrite(stbyPin, HIGH); // Enable motor driver
 }
 
 void loop() {
-  unsigned int sensorValues[sensorCount];
-  int position = qtrrc.readLine(sensorValues);
-  int error = position - 2500; // Assuming the middle position is 2500
-  int motorSpeed = KP * error + KD * (error - lastError);
-  lastError = error;
+  // Read sensor values
+  int position = readSensors();
 
-  int leftMotorSpeed = motor_hurd + motorSpeed;
-  int rightMotorSpeed = motor_hurd - motorSpeed;
+  // Calculate error
+  double error = setpoint - position;
 
-  // Constrain motor speeds to valid range
-  leftMotorSpeed = constrain(leftMotorSpeed, 0, 255);
-  rightMotorSpeed = constrain(rightMotorSpeed, 0, 255);
+  // Compute control output
+  double output = Kp * error;
 
   // Set motor speeds
-  analogWrite(mot1_pwm, leftMotorSpeed);
-  analogWrite(mot2_pwm, rightMotorSpeed);
+  int motorSpeed = 200; // Base speed
+  int leftSpeed = motorSpeed + output;
+  int rightSpeed = motorSpeed - output;
 
-  delay(50);
+  // Ensure motor speeds are within bounds
+  leftSpeed = constrain(leftSpeed, -255, 255);
+  rightSpeed = constrain(rightSpeed, -255, 255);
+
+  // Set motor directions
+  if (leftSpeed > 0) {
+    digitalWrite(motorLeftDir1, HIGH);
+    digitalWrite(motorLeftDir2, LOW);
+  } else {
+    digitalWrite(motorLeftDir1, LOW);
+    digitalWrite(motorLeftDir2, HIGH);
+    leftSpeed = -leftSpeed;
+  }
+
+  if (rightSpeed > 0) {
+    digitalWrite(motorRightDir1, HIGH);
+    digitalWrite(motorRightDir2, LOW);
+  } else {
+    digitalWrite(motorRightDir1, LOW);
+    digitalWrite(motorRightDir2, HIGH);
+    rightSpeed = -rightSpeed;
+  }
+
+  // Set motor speeds
+  analogWrite(motorLeftPWM, leftSpeed);
+  analogWrite(motorRightPWM, rightSpeed);
+}
+
+int readSensors() {
+  int position = 0;
+  int total = 0;
+  for (int i = 0; i < NUM_SENSORS; i++) {
+    sensorValues[i] = analogRead(sensorPins[i]);
+    sensorValues[i] = 1023 - sensorValues[i]; // Invert sensor values for white line
+    position += sensorValues[i] * (i * 1000); // Weighted sum
+    total += sensorValues[i];
+  }
+  return total > 0 ? position / total : 2500; // Return average position
 }
