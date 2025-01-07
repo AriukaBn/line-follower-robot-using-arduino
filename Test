@@ -1,0 +1,56 @@
+#include <QTRSensors.h>
+
+// Motor pins
+const int mot1_pwm = 6;
+const int mot2_pwm = 5;
+const int mot1_b = 7;
+const int mot1_a = 8;
+const int mot2_a = 2;
+const int mot2_b = 4;
+const int stby = 9;
+
+// Sensor pins
+const int sensorCount = 6;
+QTRSensorsRC qtrrc((unsigned char[]) {A0, A1, A2, A3, A6, A7}, sensorCount, 2500, 13);
+
+int motor_hurd = 50; // Base motor speed
+int lastError = 0;
+float KP = 0.2; // Proportional gain
+float KD = 0.1; // Derivative gain
+
+void setup() {
+  // Initialize motors
+  pinMode(mot1_pwm, OUTPUT);
+  pinMode(mot2_pwm, OUTPUT);
+  pinMode(mot1_a, OUTPUT);
+  pinMode(mot1_b, OUTPUT);
+  pinMode(mot2_a, OUTPUT);
+  pinMode(mot2_b, OUTPUT);
+  pinMode(stby, OUTPUT);
+  digitalWrite(stby, HIGH); // Enable motor driver
+  analogWrite(mot1_pwm, 0);
+  analogWrite(mot2_pwm, 0);
+  Serial.begin(9600);
+  qtrrc.calibrate();
+}
+
+void loop() {
+  unsigned int sensorValues[sensorCount];
+  int position = qtrrc.readLine(sensorValues);
+  int error = position - 2500; // Assuming the middle position is 2500
+  int motorSpeed = KP * error + KD * (error - lastError);
+  lastError = error;
+
+  int leftMotorSpeed = motor_hurd + motorSpeed;
+  int rightMotorSpeed = motor_hurd - motorSpeed;
+
+  // Constrain motor speeds to valid range
+  leftMotorSpeed = constrain(leftMotorSpeed, 0, 255);
+  rightMotorSpeed = constrain(rightMotorSpeed, 0, 255);
+
+  // Set motor speeds
+  analogWrite(mot1_pwm, leftMotorSpeed);
+  analogWrite(mot2_pwm, rightMotorSpeed);
+
+  delay(50);
+}
