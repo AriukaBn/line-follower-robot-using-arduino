@@ -1,85 +1,145 @@
-#define NUM_SENSORS 6
+#include <SparkFun_TB6612.h>
+#include <SoftwareSerial.h>
 
-// Sensor pins
-const int sensorPins[NUM_SENSORS] = {A0, A1, A2, A3, A6, A7};
-int sensorValues[NUM_SENSORS];
-
-// Motor pins
-const int motorLeftPWM = 5;
-const int motorRightPWM = 6;
-const int motorLeftDir1 = 2;
-const int motorLeftDir2 = 4;
-const int motorRightDir1 = 7;
-const int motorRightDir2 = 8;
-const int stbyPin = 9;
-
-// Proportional control parameter
-double Kp = 0.2;
-double setpoint = 2500; // Center value for 6 sensors
+SoftwareSerial mySerial(12, 11);
+#define AIN1 2
+#define BIN1 7
+#define AIN2 4
+#define BIN2 8
+#define PWMA 5
+#define PWMB 6
+#define STBY 9
+const int offsetA = -1;
+const int offsetB = -1;
+Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
+Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
+int P, D, I, previousError, PIDvalue, error;
+int lsp, rsp;
+int lfspeed = 75;
+float Kp = 0;
+float Kd = 0;
+float Ki = 0;
+int minValues[7], maxValues[7], threshold[7];
+int asdf = 0;
+char utga;
 
 void setup() {
-  // Initialize motors
-  pinMode(motorLeftPWM, OUTPUT);
-  pinMode(motorRightPWM, OUTPUT);
-  pinMode(motorLeftDir1, OUTPUT);
-  pinMode(motorLeftDir2, OUTPUT);
-  pinMode(motorRightDir1, OUTPUT);
-  pinMode(motorRightDir2, OUTPUT);
-  pinMode(stbyPin, OUTPUT);
-  digitalWrite(stbyPin, HIGH); // Enable motor driver
+    Serial.begin(9600);
+    mySerial.begin(9600);
+    pinMode(11, INPUT_PULLUP);
+    pinMode(12, INPUT_PULLUP);
 }
 
 void loop() {
-  // Read sensor values
-  int position = readSensors();
-
-  // Calculate error
-  double error = setpoint - position;
-
-  // Compute control output
-  double output = Kp * error;
-
-  // Set motor speeds
-  int motorSpeed = 200; // Base speed
-  int leftSpeed = motorSpeed + output;
-  int rightSpeed = motorSpeed - output;
-
-  // Ensure motor speeds are within bounds
-  leftSpeed = constrain(leftSpeed, -255, 255);
-  rightSpeed = constrain(rightSpeed, -255, 255);
-
-  // Set motor directions
-  if (leftSpeed > 0) {
-    digitalWrite(motorLeftDir1, HIGH);
-    digitalWrite(motorLeftDir2, LOW);
-  } else {
-    digitalWrite(motorLeftDir1, LOW);
-    digitalWrite(motorLeftDir2, HIGH);
-    leftSpeed = -leftSpeed;
-  }
-
-  if (rightSpeed > 0) {
-    digitalWrite(motorRightDir1, HIGH);
-    digitalWrite(motorRightDir2, LOW);
-  } else {
-    digitalWrite(motorRightDir1, LOW);
-    digitalWrite(motorRightDir2, HIGH);
-    rightSpeed = -rightSpeed;
-  }
-
-  // Set motor speeds
-  analogWrite(motorLeftPWM, leftSpeed);
-  analogWrite(motorRightPWM, rightSpeed);
+    while (asdf == 0) {
+      if (mySerial.available() > 0){
+        utga = mySerial.read();
+        if (utga == 'F') { // Move forward
+          motor1.drive(255);
+          motor2.drive(255);
+        } else if (utga == 'B') { // Move backward
+          motor1.drive(-255);
+          motor2.drive(-255);
+        } else if (utga == 'L') { // Turn left
+          motor1.drive(125);
+          motor2.drive(255);
+        } else if (utga == 'R') { // Turn right
+          motor1.drive(255);
+          motor2.drive(125);
+        } else if (utga == 'S') { // Stop
+          motor1.drive(0);
+          motor2.drive(0);
+        } else if (utga == 'Q') { // Forward-Left
+          motor1.drive(255);
+          motor2.drive(128);
+        } else if (utga == 'E') { // Forward-Right
+          motor1.drive(128);
+          motor2.drive(255);
+        } else if (utga == 'Z') { // Backward-Left
+          motor1.drive(-255);
+          motor2.drive(-128);
+        } else if (utga == 'C') { // Backward-Right
+          motor1.drive(-128);
+          motor2.drive(-255);
+        } else if (utga == 'Y'){
+          asdf = 1;
+        }
+      }
+    }
+    while (asdf == 1) {
+      calibrate();
+      if (analogRead(1) < threshold[1] && analogRead(6) > threshold[6]) {
+          lsp = 0; rsp = lfspeed;
+          motor1.drive(0);
+          motor2.drive(lfspeed);
+      } else if (analogRead(6) < threshold[6] && analogRead(1) > threshold[1]) {
+          lsp = lfspeed; rsp = 0;
+          motor1.drive(lfspeed);
+          motor2.drive(0);
+      } else if (analogRead(3) < threshold[3]) {
+          Kp = 0.0006 * analogRead(3);
+          Kd = 10 * Kp;
+          linefollow();
+      }
+      if (mySerial.available() > 0){
+        utga = mySerial.read();
+        if (utga == 'F'){
+          asdf = 0;
+          break;
+        } else if (utga == 'B'){
+          asdf = 0;
+          break;
+        } else if (utga == 'L'){
+          asdf = 0;
+          break;
+        } else if (utga == 'R'){
+          asdf = 0;
+          break;
+        }
+      }
+    }
 }
 
-int readSensors() {
-  int position = 0;
-  int total = 0;
-  for (int i = 0; i < NUM_SENSORS; i++) {
-    sensorValues[i] = analogRead(sensorPins[i]);
-    sensorValues[i] = 1023 - sensorValues[i]; // Invert sensor values for white line
-    position += sensorValues[i] * (i * 1000); // Weighted sum
-    total += sensorValues[i];
-  }
-  return total > 0 ? position / total : 2500; // Return average position
+void linefollow() {
+    int error = (analogRead(2) - analogRead(5));
+    P = error;
+    I = I + error;
+    D = error - previousError;
+    PIDvalue = (Kp * P) + (Ki * I) + (Kd * D);
+    previousError = error;
+    lsp = lfspeed - PIDvalue;
+    rsp = lfspeed + PIDvalue;
+    if (lsp > 255) { lsp = 255; }
+    if (lsp < 0) { lsp = 0; }
+    if (rsp > 255) { rsp = 255; }
+    if (rsp < 0) { rsp = 0; }
+    motor1.drive(lsp);
+    motor2.drive(rsp);
+}
+
+void calibrate() {
+    for (int i = 1; i < 7; i++) {
+        minValues[i] = analogRead(i);
+        maxValues[i] = analogRead(i);
+    }
+    for (int i = 0; i < 3000; i++) {
+        motor1.drive(50);
+        motor2.drive(-50);
+        for (int i = 1; i < 7; i++) {
+            if (analogRead(i) < minValues[i]) {
+                minValues[i] = analogRead(i);
+            }
+            if (analogRead(i) > maxValues[i]) {
+                maxValues[i] = analogRead(i);
+            }
+        }
+    }
+    for (int i = 1; i < 7; i++) {
+        threshold[i] = (minValues[i] + maxValues[i]) / 2;
+        Serial.print(threshold[i]);
+        Serial.print(" ");
+    }
+    Serial.println();
+    motor1.drive(0);
+    motor2.drive(0);
 }
