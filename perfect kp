@@ -1,0 +1,57 @@
+  #include <SparkFun_TB6612.h>
+  #include <QTRSensors.h>
+  QTRSensors qtr;
+
+  
+  #define AIN1 2
+  #define BIN1 7
+  #define AIN2 4
+  #define BIN2 8
+  #define PWMA 5
+  #define PWMB 6
+  #define STBY 9
+  const int offsetA = 1;
+  const int offsetB = -1;
+
+  const uint8_t SensorCount = 6;
+  uint16_t sensorValues[SensorCount];
+  Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
+  Motor motor2 = Motor(BIN1, BIN2, PWMB, offsetB, STBY);
+  int P, D, I, previousError, PIDvalue, error;
+  int lsp, rsp;
+  int lfspeed = 100;
+  float Kp = 0.17;
+  float Kd = 0.3;
+  float Ki = 0.01;
+  
+  void setup() {
+      pinMode(11, INPUT_PULLUP);
+      pinMode(12, INPUT_PULLUP);
+      qtr.setTypeAnalog();
+      qtr.setSensorPins((const uint8_t[]){A0, A1, A2, A3, A4, A5}, SensorCount);
+      qtr.setEmitterPin(2);
+      motor1.drive(50);
+      motor2.drive(-50);
+      for (int i = 0; i < 100; i++){
+        qtr.calibrate();
+      }
+      Serial.begin(9600);
+      
+  }
+  
+  void loop() {
+    unsigned int pos = qtr.readLineWhite(sensorValues);
+    int error = 2500 - pos;
+      P = error;
+      I = I + error;
+      D = error - previousError;
+      PIDvalue = (Kp * P) + (Ki * I) + (Kd * D);
+      previousError = error;
+      lsp = lfspeed - PIDvalue;
+      rsp = lfspeed + PIDvalue;
+      lsp = constrain(lsp, 0, lfspeed);
+      rsp = constrain(rsp, 0, lfspeed);
+      motor1.drive(lsp);
+      motor2.drive(rsp);
+  }
+  
