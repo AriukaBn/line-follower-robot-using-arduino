@@ -1,0 +1,102 @@
+#include <AFMotor.h>    //Adafruit Motor Shield Library. First you must download and install AFMotor library
+#include <QTRSensors.h> //Pololu QTR Sensor Library. First you must download and install QTRSensors library
+  
+AF_DCMotor motor1(1, MOTOR12_1KHZ ); //create motor #1 using M1 output on Motor Drive Shield, set to 1kHz PWM frequency
+AF_DCMotor motor2(2, MOTOR12_1KHZ ); //create motor #2 using M2 output on Motor Drive Shield, set to 1kHz PWM frequency
+  
+#define KP 1 //experiment to determine this, start by something small that just makes your bot follow the line at a slow speed
+#define KD 4 //experiment to determine this, slowly increase the speeds and adjust this value. ( Note: Kp < Kd) 
+#define M1_minumum_speed 220  //minimum speed of the Motor1
+#define M2_minumum_speed 220  //minimum speed of the Motor2
+#define M1_maksimum_speed 250 //max. speed of the Motor1
+#define M2_maksimum_speed 250 //max. speed of the Motor2
+
+//sensors 0 through 5 are connected to analog inputs 0 through 5, respectively
+QTRSensors qtr;
+
+const uint8_t SensorCount = 6;
+uint16_t sensorValues[SensorCount];
+int lastError;
+  
+void setup()
+{
+delay(1500);
+  qtr.setTypeAnalog();
+  qtr.setSensorPins((const uint8_t[]){A0, A1, A2, A3, A4, A5}, SensorCount);
+  //qtr.setEmitterPin(2);
+set_motors(0,0);
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH); // turn on Arduino's LED to indicate we are in calibration mode
+
+  // analogRead() takes about 0.1 ms on an AVR.
+  // 0.1 ms per sensor * 4 samples per sensor read (default) * 6 sensors
+  // * 10 reads per calibrate() call = ~24 ms per calibrate() call.
+  // Call calibrate() 400 times to make calibration take about 10 seconds.
+  for (uint16_t i = 0; i < 400; i++)
+  {
+    qtr.calibrate();
+  }
+  digitalWrite(LED_BUILTIN, LOW); // turn off Arduino's LED to indicate we are through with calibration
+
+  // print the calibration minimum values measured when emitters were on
+  Serial.begin(9600);
+  for (uint8_t i = 0; i < SensorCount; i++)
+  {
+    Serial.print(qtr.calibrationOn.minimum[i]);
+    Serial.print(' ');
+  }
+  Serial.println();
+
+  // print the calibration maximum values measured when emitters were on
+  for (uint8_t i = 0; i < SensorCount; i++)
+  {
+    Serial.print(qtr.calibrationOn.maximum[i]);
+    Serial.print(' ');
+  }
+  delay(1000);
+}
+  
+
+  
+void loop()
+{
+
+  uint16_t position = qtr.readLineWhite(sensorValues);
+  int error = position - 2500;
+  
+int motorSpeed = KP * error + KD * (error - lastError);
+lastError = error;
+  
+int leftMotorSpeed = M1_minumum_speed + motorSpeed;
+int rightMotorSpeed = M2_minumum_speed - motorSpeed;
+  
+// set motor speeds using the two motor speed variables above
+set_motors(leftMotorSpeed, rightMotorSpeed);
+//Serial.print(leftMotorSpeed);
+//Serial.print(" ");
+//Serial.println(rightMotorSpeed);
+}
+  
+void set_motors(int motor1speed, int motor2speed)
+{
+if (motor1speed > M1_maksimum_speed ) motor1speed = M1_maksimum_speed;
+if (motor2speed > M2_maksimum_speed ) motor2speed = M2_maksimum_speed;
+if (motor1speed < -50) motor1speed = -50; 
+if (motor2speed < -50) motor2speed = -50; 
+
+motor1.setSpeed(abs(motor1speed)); 
+motor2.setSpeed(abs(motor2speed));
+
+if(motor1speed>0)
+{
+motor1.run(FORWARD); 
+}
+else {
+  motor1.run(BACKWARD); 
+}
+if(motor2speed>0)
+motor2.run(FORWARD);
+else{
+   motor2.run(BACKWARD); 
+}
+}
